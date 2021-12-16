@@ -5,7 +5,7 @@
     <rosparam>
       # tracking
       motion_capture_type: "vicon" # one of vicon,optitrack,optitrack_closed_source,qualisys,vrpn
-      motion_capture_host_name: "vicon"
+      motion_capture_host_name: "192.168.1.2:801"
       # motion_capture_interface_ip: "" # optional for optitrack with multiple interfaces
     </rosparam>
   </node>

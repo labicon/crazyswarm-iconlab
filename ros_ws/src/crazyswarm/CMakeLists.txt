@@ -153,6 +153,7 @@ include_directories(
   ../externalDependencies/libobjecttracker/include
   ## TODO remove this dependency
   ../../../crazyflie-firmware/src/modules/interface/
+  /home/iconlab/iconlab/mcbhatt2/crazyswarm-iconlab/ros_ws/src/iconlab/control_node/
 )
 
 
@@ -187,6 +188,12 @@ target_link_libraries(mocap_helper
   ${catkin_LIBRARIES}
   libmotioncapture
 )
+
+add_executable(control_node
+  ../iconlab/src/control_node/control_node.cpp)
+
+target_link_libraries(control_node
+  ${catkin_LIBRARIES})
 
 #############
 ## Install ##

@@ -14,24 +14,36 @@
 #include <stdio.h>
 #include <iostream>
 
-/* crazyflie_driver */
-#include "crazyflie_driver/AddCrazyflie.h"
-#include "crazyflie_driver/LogBlock.h"
-#include "crazyflie_driver/GenericLogData.h"
-#include "crazyflie_driver/UpdateParams.h"
-#include "crazyflie_driver/UploadTrajectory.h"
-#include "crazyflie_driver/NotifySetpointsStop.h"
+/* crazyswarm */
+//#include "crazyswarm/AddCrazyflie.h"
+#include "crazyswarm/LogBlock.h"
+#include "crazyswarm/GenericLogData.h"
+#include "crazyswarm/UpdateParams.h"
+#include "crazyswarm/UploadTrajectory.h"
+#include "crazyswarm/NotifySetpointsStop.h"
 #undef major
 #undef minor
-#include "crazyflie_driver/Hover.h"
-#include "crazyflie_driver/Takeoff.h"
-#include "crazyflie_driver/Land.h"
-#include "crazyflie_driver/GoTo.h"
-#include "crazyflie_driver/StartTrajectory.h"
-#include "crazyflie_driver/SetGroupMask.h"
-#include "crazyflie_driver/FullState.h"
-#include "crazyflie_driver/Position.h"
-#include "crazyflie_driver/VelocityWorld.h"
+#include "crazyswarm/Hover.h"
+#include "crazyswarm/Takeoff.h"
+#include "crazyswarm/Land.h"
+#include "crazyswarm/GoTo.h"
+#include "crazyswarm/StartTrajectory.h"
+#include "crazyswarm/SetGroupMask.h"
+#include "crazyswarm/FullState.h"
+#include "crazyswarm/Position.h"
+#include "crazyswarm/VelocityWorld.h"
+
+struct stateVector {
+    float x, y, z;
+    float roll, pitch, yaw;
+    float x_d, y_d, z_d;
+    float roll_d, pitch_d, yaw_d;
+};
+
+static stateVector CFState_cf1;
+static stateVector CFState_cf2;
+static stateVector CFState_cf3;
+static stateVector CFState_cf4;
 
 
 void poseCallback(const tf2_msgs::TFMessage::ConstPtr& msg) {
@@ -115,12 +127,12 @@ int main(int argc, char **argv) {
     ros::Subscriber state_subscriber = n.subscribe("tf", 1000, poseCallback);
 
     /* Service clients for simple high-level commands */
-    ros::ServiceClient takeoffClient = n.serviceClient<crazyflie_driver::Takeoff>("/takeoff");
-    ros::ServiceClient landClient = n.serviceClient<crazyflie_driver::Land>("/land");
-    ros::ServiceClient GoToClient_cf1 = n.serviceClient<crazyflie_driver::GoTo>("/cf1/go_to");
-    ros::ServiceClient GoToClient_cf2 = n.serviceClient<crazyflie_driver::GoTo>("/cf2/go_to");
-    ros::ServiceClient GoToClient_cf3 = n.serviceClient<crazyflie_driver::GoTo>("/cf3/go_to");
-    ros::ServiceClient GoToClient_cf4 = n.serviceClient<crazyflie_driver::GoTo>("/cf4/go_to");
+    ros::ServiceClient takeoffClient = n.serviceClient<crazyswarm::Takeoff>("/takeoff");
+    ros::ServiceClient landClient = n.serviceClient<crazyswarm::Land>("/land");
+    ros::ServiceClient GoToClient_cf1 = n.serviceClient<crazyswarm::GoTo>("/cf1/go_to");
+    ros::ServiceClient GoToClient_cf2 = n.serviceClient<crazyswarm::GoTo>("/cf2/go_to");
+    ros::ServiceClient GoToClient_cf3 = n.serviceClient<crazyswarm::GoTo>("/cf3/go_to");
+    ros::ServiceClient GoToClient_cf4 = n.serviceClient<crazyswarm::GoTo>("/cf4/go_to");
 
     /* Wait for <Enter> key press to begin mission */
     std::cout << "\t########## PRESS <Enter> TO BEGIN MISSION ##########" << std::endl;
@@ -134,24 +146,24 @@ int main(int argc, char **argv) {
     }
 
     /* Construct GoTo service once to be used in loop */
-    crazyflie_driver::GoTo srvGoTo_cf1;
+    crazyswarm::GoTo srvGoTo_cf1;
     srvGoTo_cf1.request.groupMask = 0;
-    crazyflie_driver::GoTo srvGoTo_cf2;
+    crazyswarm::GoTo srvGoTo_cf2;
     srvGoTo_cf2.request.groupMask = 0;
-    crazyflie_driver::GoTo srvGoTo_cf3;
+    crazyswarm::GoTo srvGoTo_cf3;
     srvGoTo_cf3.request.groupMask = 0;
-    crazyflie_driver::GoTo srvGoTo_cf4;
+    crazyswarm::GoTo srvGoTo_cf4;
     srvGoTo_cf4.request.groupMask = 0;
 
     /* Send takeoff command through /takeoff service */
-    crazyflie_driver::Takeoff srvTakeoff;
+    crazyswarm::Takeoff srvTakeoff;
     srvTakeoff.request.groupMask = 0;
     srvTakeoff.request.height = 1.0;
     srvTakeoff.request.duration = ros::Duration(3.0);
     takeoffClient.call(srvTakeoff);
     ros::Duration(3.0).sleep();
 
-    
+
     while (ros::ok()) {
 
         int c = getch(); // Get the character that was typed
@@ -180,11 +192,11 @@ int main(int argc, char **argv) {
             GoToClient_cf2.call(srvGoTo_cf2);
             ros::Duration(3.0).sleep();
             break;
-        }	    
+        }
     }
 
 
-    crazyflie_driver::Land srvLand;
+    crazyswarm::Land srvLand;
     srvLand.request.duration = ros::Duration(3.0);
     landClient.call(srvLand);
 
