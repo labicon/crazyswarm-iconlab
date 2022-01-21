@@ -83,7 +83,7 @@ function RobotDynamics.moments(model::Quadrotor, x, u)
     w2 = u[2]
     w3 = u[3]
     w4 = u[4]
-    
+
     # Calculate motor forces
     F1 = max(0,kf*w1);
     F2 = max(0,kf*w2);
@@ -108,8 +108,8 @@ N = 51                # number of knot points
 tf = 10.0               # total time (sec)
 dt = tf/(N-1)          # time step (sec)
 
-x0 = RBState([0,0,1], UnitQuaternion(I), zeros(3), zeros(3))
-xf = RBState([-1,-3,2], UnitQuaternion(I), zeros(3), zeros(3))
+x0 = RBState([0,1,1], UnitQuaternion(I), zeros(3), zeros(3))
+xf = RBState([-1,-1.5,2], UnitQuaternion(I), zeros(3), zeros(3))
 
 # objective
 Q = Diagonal(@SVector fill(0.1, n))
@@ -186,53 +186,53 @@ function gen_tracking_problem(prob::Problem, N; Qk = 0.1, Rk = 0.01, Qfk = Qk,)
 end
 
 function run_MPC_iterate(x_update,t0,k_mpc,prob_mpc,Z_track,X_traj,iters,times,i)
-# Update initial time
-t0 += dt
-k_mpc += 1
-global prob_mpc = prob_mpc
-TrajectoryOptimization.set_initial_time!(prob_mpc, t0)
+    # Update initial time
+    #t0 += dt
+    #k_mpc += 1
+    global prob_mpc = prob_mpc
+    #TrajectoryOptimization.set_initial_time!(prob_mpc, t0)
 
-global X_traj
-#print(X_traj)
-# Update initial state by using 1st control, and adding some noise
-r = x_update[1:3]
-q = UnitQuaternion(x_update[4],x_update[5],x_update[6],x_update[7], false)
-q_prev = UnitQuaternion(X_traj[i][4],X_traj[i][5],X_traj[i][6],X_traj[i][7],false)
-    
-q_dot = (q-q_prev)/dt
-    
-ang = inv(q_prev)*q_dot
-    
-v = (r - X_traj[i][1:3])/dt
-w = [ang[3,2], ang[1,3], ang[2,1]]
-x0 = RBState(r, q, v, w)
+    global X_traj
+    #print(X_traj)
+    # Update initial state by using 1st control, and adding some noise
+    r = x_update[1:3]
+    q = UnitQuaternion(x_update[4],x_update[5],x_update[6],x_update[7], false)
+    q_prev = UnitQuaternion(X_traj[i][4],X_traj[i][5],X_traj[i][6],X_traj[i][7],false)
 
-# Update the initial state after the dynamics are propogated.
-TrajectoryOptimization.set_initial_state!(prob_mpc, x0)
-X_traj[i+1] = x0
+    q_dot = (q-q_prev)/dt
 
-global Z_track = Z_track
+    ang = inv(q_prev)*q_dot
 
-# Update tracking cost
-TrajectoryOptimization.update_trajectory!(prob_mpc.obj, Z_track, k_mpc)
+    v = (r - X_traj[i][1:3])/dt
+    w = [ang[3,2], ang[1,3], ang[2,1]]
+    x0 = RBState(r, q, v, w)
 
-# Shift the initial trajectory
-RobotDynamics.shift_fill!(prob_mpc.Z)
+    # Update the initial state after the dynamics are propogated.
+    TrajectoryOptimization.set_initial_state!(prob_mpc, x0)
+    X_traj[i+1] = x0
 
+    global Z_track = Z_track
 
-# Shift the multipliers and penalties
-Altro.shift_fill!(get_constraints(altro))
+    # Update tracking cost
+    TrajectoryOptimization.update_trajectory!(prob_mpc.obj, Z_track, k_mpc)
+
+    # Shift the initial trajectory
+    RobotDynamics.shift_fill!(prob_mpc.Z)
 
 
-# Solve the updated problem
-Altro.solve!(altro)
+    #Shift the multipliers and penalties
+    Altro.shift_fill!(get_constraints(altro))
 
-# Log the results and performance
-global iters[i,1] = iterations(altro)
 
-# ALTRO in ms and ECOS in s, by default
-global times[i,1] = altro.stats.tsolve
-    
+    # Solve the updated problem
+    Altro.solve!(altro)
+
+    # Log the results and performance
+    global iters[i,1] = iterations(altro)
+
+    # ALTRO in ms and ECOS in s, by default
+    global times[i,1] = altro.stats.tsolve
+
 end
 
 function run_MPC(prob_mpc, opts_mpc, Z_track,
@@ -293,7 +293,7 @@ function run_MPC(prob_mpc, opts_mpc, Z_track,
 
         # ALTRO in ms and ECOS in s, by default
         times[i,1] = altro.stats.tsolve
-        
+
     end
 
 
@@ -347,6 +347,7 @@ X_traj = [copy(x0) for k = 1:num_iters+1]
 
 integrate = TrajectoryOptimization.integration
 
+set_initial_time = TrajectoryOptimization.set_initial_time!
 end
 
 
@@ -370,11 +371,3 @@ end
 
 #times = mean(res[:time], dims=1)
 #print("Average time:", times[1])
-
-
-
-
-
-
-
-
