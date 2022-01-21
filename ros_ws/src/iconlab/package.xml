@@ -40,12 +40,12 @@
   <build_depend>libmotioncapture</build_depend>
   <build_depend>tf_conversion</build_depend>
 
-  <run_depend>message_runtime</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>crazyflie_cpp</run_depend>
-  <run_depend>libobjecttracker</run_depend>
-  <run_depend>libmotioncapture</run_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>crazyflie_cpp</exec_depend>
+  <exec_depend>libobjecttracker</exec_depend>
+  <exec_depend>libmotioncapture</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
