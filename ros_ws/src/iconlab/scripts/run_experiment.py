@@ -27,11 +27,11 @@ TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
 
 # Used to tune aggresiveness of low-level controller
-GOTO_DURATION = 2.0
+GOTO_DURATION = 1.6
 
 # Defining takeoff and experiment start position
 cf1_takeoff_pos = [0.0, 0.0, 1.0]
-cf1_start_pos = [0.0, 1.0, 1.0]
+cf1_start_pos = [-1.0, 1.0, 1.0]
 cf2_takeoff_pos = [-0.5, 0.0, 1.0]
 cf2_start_pos = [0.0, -1.0, 1.0]
 
@@ -74,7 +74,8 @@ def perform_experiment():
             xd_actual = Main.Julia_Functions.discrete_dynamics(Main.Julia_Functions.integrate(Main.Julia_Functions.prob_mpc),
                                     Main.Julia_Functions.prob_mpc.model, Main.Julia_Functions.prob_mpc.Z[0])
 
-            xd = Main.Julia_Functions.states(Main.Julia_Functions.altro)[5]
+
+            xd = Main.Julia_Functions.states(Main.Julia_Functions.altro)[4]
 
             print("Desired Position: " + str(xd_actual))
 
@@ -108,9 +109,7 @@ def perform_experiment():
 
             if LOG_DATA:
                 timestampString = str(time.time())
-                csvwriter.writerow([timestampString] + xd + x_update)
-                print([timestampString, xd, x_update])
-                print("Logging Data")
+                csvwriter.writerow([timestampString] + xd + x_update + xd_actual)
 
             rate.sleep()
 
@@ -138,7 +137,7 @@ if __name__ == '__main__':
 
     listener = tf.TransformListener()
 
-    rate = rospy.Rate(5.0)
+    rate = rospy.Rate(10.0)
 
     if USE_JULIA:
         print("### Import Julia Functions. May take a while...")
