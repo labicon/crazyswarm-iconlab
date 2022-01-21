@@ -45,14 +45,7 @@
     </rosparam>
   </node>
 
-  <node pkg="crazyswarm" type="crazyswarm_teleop" name="crazyswarm_teleop" output="screen">
-    <param name="csv_file" value="$(find crazyswarm)/launch/figure8_smooth.csv" />
-    <param name="timescale" value="0.8" />
-  </node>
-
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find crazyswarm)/launch/test.rviz"/>
-
-  <node name="control_node" pkg="crazyswarm" type="control_node" output="screen"/>
 
   <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_x" args="/cf2/log1/values[0]"/> -->
   <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_roll" args="/cf1/log1/values[2] /cf1/log1/values[3]"/> -->
