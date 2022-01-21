@@ -6,13 +6,15 @@ import tf
 import geometry_msgs.msg
 from pycrazyswarm import *
 import datetime
+import csv
+import time
 
-#import julia
-#jl = julia.Julia(compiled_modules=False)
-#from julia import Main
+import julia
+jl = julia.Julia(compiled_modules=False)
+from julia import Main
 
 # Enable or disable using Julia MPC algorithm
-USE_JULIA = False
+USE_JULIA = True
 
 # Assemble filename for logged data
 datetimeString = datetime.datetime.now().strftime("%m%d%y-%H:%M:%S")
@@ -69,12 +71,12 @@ def perform_experiment():
 
             Main.Julia_Functions.set_initial_time(Main.Julia_Functions.prob_mpc, Main.Julia_Functions.t0)
 
-            xd = Main.Julia_Functions.discrete_dynamics(Main.Julia_Functions.integrate(Main.Julia_Functions.prob_mpc),
+            xd_actual = Main.Julia_Functions.discrete_dynamics(Main.Julia_Functions.integrate(Main.Julia_Functions.prob_mpc),
                                     Main.Julia_Functions.prob_mpc.model, Main.Julia_Functions.prob_mpc.Z[0])
 
-            #xd = Main.Julia_Functions.states(Main.Julia_Functions.altro)[5]
+            xd = Main.Julia_Functions.states(Main.Julia_Functions.altro)[5]
 
-            print("Desired Position: " + str(xd))
+            print("Desired Position: " + str(xd_actual))
 
             cf1.goTo(xd, yaw=0.0, duration=GOTO_DURATION)
 
@@ -105,8 +107,10 @@ def perform_experiment():
             #print(x_d)
 
             if LOG_DATA:
-                timestampString = str(datetime.datetime.now().timestamp())
-                csvwriter.writerow([timestampString, xd, x_update])
+                timestampString = str(time.time())
+                csvwriter.writerow([timestampString] + xd + x_update)
+                print([timestampString, xd, x_update])
+                print("Logging Data")
 
             rate.sleep()
 
@@ -149,7 +153,7 @@ if __name__ == '__main__':
 
     if LOG_DATA:
         print("### Logging data to file: " + csv_filename)
-        csvfile = open(csv_filename, 'w', newline='') 
+        csvfile = open(csv_filename, 'w')
         csvwriter = csv.writer(csvfile, delimiter=',')
 
         csvwriter.writerow(['# CFs', str(num_cfs)])
@@ -170,8 +174,3 @@ if __name__ == '__main__':
         print ("##### KeyboardInterrupt detected. Landing all CFs  #####")
         cf1.land(targetHeight=0.05, duration=3.0)
         timeHelper.sleep(4.0)
-
-
-
-
-
