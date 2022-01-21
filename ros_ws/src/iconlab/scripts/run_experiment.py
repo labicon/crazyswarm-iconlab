@@ -5,12 +5,21 @@ import math
 import tf
 import geometry_msgs.msg
 from pycrazyswarm import *
-import signal
+import datetime
 
-import julia
-jl = julia.Julia(compiled_modules=False)
-from julia import Main
+#import julia
+#jl = julia.Julia(compiled_modules=False)
+#from julia import Main
 
+# Enable or disable using Julia MPC algorithm
+USE_JULIA = False
+
+# Assemble filename for logged data
+datetimeString = datetime.datetime.now().strftime("%m%d%y-%H:%M:%S")
+csv_filename = "experiment_data/" + datetimeString + "-data.csv"
+
+# Enable or disable data logging
+LOG_DATA = True
 
 TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
@@ -18,52 +27,22 @@ TAKEOFF_DURATION = 3.0
 # Used to tune aggresiveness of low-level controller
 GOTO_DURATION = 2.0
 
-# Enable or disable using Julia MPC algorithm
-USE_JULIA = True
+# Defining takeoff and experiment start position
+cf1_takeoff_pos = [0.0, 0.0, 1.0]
+cf1_start_pos = [0.0, 1.0, 1.0]
+cf2_takeoff_pos = [-0.5, 0.0, 1.0]
+cf2_start_pos = [0.0, -1.0, 1.0]
 
-# Loop frequency
-
-
-def sigint_handler(sig, frame):
-    """
-    Catches the SIGINT signal generated when ctrl-c is pressed.
-    Sends a land command to all CFs before exiting the program.
-    """
-    print("SIGINT received, landing all CFs")
-    swarm.allcfs.land(0.05, TAKEOFF_DURATION, 0)
-
-if __name__ == '__main__':
-    #rospy.init_node('tf_listener')
-
-    swarm = Crazyswarm()
-    timeHelper = swarm.timeHelper
-    cf = swarm.allcfs.crazyflies[0]
-
-    listener = tf.TransformListener()
-
-    rate = rospy.Rate(5.0)
-
-    if USE_JULIA:
-        print("### Import Julia Functions. May take a while...")
-
-        Main.include("MPC-One-Quad_1.jl")
-        LOOP_ITERS = Main.Julia_Functions.num_iters
-
-        print("### Julia import complete.")
-    else:
-        LOOP_ITERS = 100
+def perform_experiment():
 
     # Wait for button press for take off
     raw_input("##### Press Enter to Take Off #####")
 
-    # Set SIGINT signal handler to catch ctrl-c press
-    signal.signal(signal.SIGINT, sigint_handler)
-
-    cf.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
+    cf1.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
     timeHelper.sleep(TAKEOFF_DURATION)
 
+    cf1.goTo(cf1_start_pos, yaw=0.0, duration=2.0)
     timeHelper.sleep(2.0)
-    cf.goTo([0.0, 1.0, 1.0], yaw=0.0, duration=2.0)
 
     # Wait for button press to begin experiment
     raw_input("##### Press Enter to Begin Experiment #####")
@@ -97,7 +76,7 @@ if __name__ == '__main__':
 
             print("Desired Position: " + str(xd))
 
-            cf.goTo(xd, yaw=0.0, duration=GOTO_DURATION)
+            cf1.goTo(xd, yaw=0.0, duration=GOTO_DURATION)
 
             try:
                 (pos_cf1,rot_cf1) = listener.lookupTransform('/world', '/cf1', rospy.Time(0))
@@ -124,13 +103,75 @@ if __name__ == '__main__':
 
             #x_d = Main.Julia_Functions.X_traj[i+2][0:3]
             #print(x_d)
+
+            if LOG_DATA:
+                timestampString = str(datetime.datetime.now().timestamp())
+                csvwriter.writerow([timestampString, xd, x_update])
+
             rate.sleep()
 
 
     raw_input("##### Press Enter to Go Back to Origin #####")
 
-    cf.goTo([0.0, 0.0, 1.0], yaw=0.0, duration=3.0)
-    timeHelper.sleep(1.0)
+    cf1.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
+    timeHelper.sleep(4.0)
 
-    cf.land(targetHeight=0.05, duration=TAKEOFF_DURATION)
-    timeHelper.sleep(TAKEOFF_DURATION + 1.0)
+    cf1.land(targetHeight=0.05, duration=3.0)
+    timeHelper.sleep(4.0)
+
+
+
+
+if __name__ == '__main__':
+    #rospy.init_node('tf_listener')
+
+    swarm = Crazyswarm()
+    timeHelper = swarm.timeHelper
+
+    num_cfs = len(swarm.allcfs.crazyflies)
+
+    cf1 = swarm.allcfs.crazyflies[0]
+
+    listener = tf.TransformListener()
+
+    rate = rospy.Rate(5.0)
+
+    if USE_JULIA:
+        print("### Import Julia Functions. May take a while...")
+
+        Main.include("MPC-One-Quad_1.jl")
+        LOOP_ITERS = Main.Julia_Functions.num_iters
+
+        print("### Julia import complete.")
+    else:
+        LOOP_ITERS = 100
+
+
+    if LOG_DATA:
+        print("### Logging data to file: " + csv_filename)
+        csvfile = open(csv_filename, 'w', newline='') 
+        csvwriter = csv.writer(csvfile, delimiter=',')
+
+        csvwriter.writerow(['# CFs', str(num_cfs)])
+        csvwriter.writerow(["Timestamp [s]"] + num_cfs*["x_d", "y_d", "z_d", " x", "y", "z", "qw", "qx", "qy", "qz"])
+
+    try:
+        perform_experiment()
+
+    except Exception as e:
+        print ("##### Python exception occurred! Returning to start location and landing #####")
+        cf1.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
+        timeHelper.sleep(4.0)
+        cf1.land(targetHeight=0.05, duration=3.0)
+        timeHelper.sleep(4.0)
+        raise(e)
+
+    except KeyboardInterrupt:
+        print ("##### KeyboardInterrupt detected. Landing all CFs  #####")
+        cf1.land(targetHeight=0.05, duration=3.0)
+        timeHelper.sleep(4.0)
+
+
+
+
+
