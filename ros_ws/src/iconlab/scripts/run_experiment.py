@@ -27,11 +27,11 @@ TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
 
 # Used to tune aggresiveness of low-level controller
-GOTO_DURATION = 1.6
+GOTO_DURATION = 1.5
 
 # Defining takeoff and experiment start position
 cf1_takeoff_pos = [0.0, 0.0, 1.0]
-cf1_start_pos = [-1.0, 1.0, 1.0]
+cf1_start_pos = [-1.5, 1.5, 1.0]
 cf2_takeoff_pos = [-0.5, 0.0, 1.0]
 cf2_start_pos = [0.0, -1.0, 1.0]
 
@@ -43,7 +43,7 @@ def perform_experiment():
     cf1.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
     timeHelper.sleep(TAKEOFF_DURATION)
 
-    cf1.goTo(cf1_start_pos, yaw=0.0, duration=2.0)
+    cf1.goTo(cf1_start_pos, yaw=0.0, duration=3.0)
     timeHelper.sleep(2.0)
 
     # Wait for button press to begin experiment
@@ -75,7 +75,7 @@ def perform_experiment():
                                     Main.Julia_Functions.prob_mpc.model, Main.Julia_Functions.prob_mpc.Z[0])
 
 
-            xd = Main.Julia_Functions.states(Main.Julia_Functions.altro)[4]
+            xd = Main.Julia_Functions.states(Main.Julia_Functions.altro)[7]
 
             print("Desired Position: " + str(xd_actual))
 

@@ -4,15 +4,16 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
 
 
-filename = "experiment_data/012522-16_29_48-data.csv"
+filename = "experiment_data/030922-18:23:34-data.csv"
 
 data = np.genfromtxt(filename, delimiter=',', skip_header=2)
 
 timestamps = data[:, 0]
 timestamps -= timestamps[0]
 
-cf1_actual_position = data[:, 18:21]
-human_1_position = data[:,25:28]
+cf1_actual_position = data[:, 22:25]
+human_1_position = data[:, 29:32]
+human_2_position = data[:,33:36]
 
 def init_animation():
     cf1_line.set_data([],[])
@@ -26,6 +27,16 @@ def update_animation(frame):
                       cf1_actual_position[0:frame, 1])
 
     cf1_line.set_3d_properties(cf1_actual_position[0:frame, 2])
+
+    human1_line.set_data(human_1_position[0:frame, 0],
+                      human_1_position[0:frame, 1])
+
+    human1_line.set_3d_properties(human_1_position[0:frame, 2])
+
+    human2_line.set_data(human_2_position[0:frame, 0],
+                      human_2_position[0:frame, 1])
+
+    human2_line.set_3d_properties(human_2_position[0:frame, 2])
 
     return cf1_line, human1_line, human2_line
 
@@ -53,3 +64,5 @@ line_ani = animation.FuncAnimation(fig,
                                    blit=False)
 
 plt.show()
+
+line_ani.save('animation.gif', writer='imagemagick', fps=10)

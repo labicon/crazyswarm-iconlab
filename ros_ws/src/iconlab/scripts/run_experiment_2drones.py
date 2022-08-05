@@ -8,6 +8,7 @@ from pycrazyswarm import *
 import datetime
 import csv
 import time
+import numpy as np
 
 import julia
 jl = julia.Julia(compiled_modules=False)
@@ -31,18 +32,22 @@ GOTO_DURATION = 1.6
 
 # Defining takeoff and experiment start position
 cf1_takeoff_pos = [0.0, 0.0, 1.0]
-cf1_start_pos = [-1.0, 1.0, 1.0]
-cf2_takeoff_pos = [-0.5, 0.0, 1.0]
-cf2_start_pos = [0.0, -1.0, 1.0]
+cf1_start_pos = [-1.0, -1.5, 1.0]
+cf2_takeoff_pos = [-0.5, 0.0, 0.5]
+cf2_start_pos = [-1.5, -1.0, 1.0]
 
 # Import waypoints from csv file
-csvfilename = "hmmm.csv"
-data = np.genfromtxt(csvfilename, delimiter=',')
+csvfilename = "Waypoints_two_quad.csv"
+data = np.genfromtxt(csvfilename, delimiter=',').T
+data[:,0] -= 1.5
+data[:,1] -= 1.5
+data[:,13] -= 1.5
+data[:,14] -= 1.5
 waypoints_cf1 = []
 waypoints_cf2 = []
 for i in range(data.shape[0]):
     waypoints_cf1.append(list(data[i, 0:3]))
-    waypoints_cf2.append(list(data[i, 0:3])) # <------ FIX ME
+    waypoints_cf2.append(list(data[i, 13:16]))
 
 def perform_experiment():
 
@@ -60,9 +65,9 @@ def perform_experiment():
     # Wait for button press to begin experiment
     raw_input("##### Press Enter to Begin Experiment #####")
 
-    for i in range(len(waypoints)):
+    for i in range(len(waypoints_cf1)):
 
-        print("Desired Position: " + str(waypoints[i]))
+        #print("Desired Position: " + str(waypoints[i]))
 
         cf1.goTo(waypoints_cf1[i], yaw=0.0, duration=GOTO_DURATION)
         cf2.goTo(waypoints_cf2[i], yaw=0.0, duration=GOTO_DURATION)
@@ -88,8 +93,8 @@ def perform_experiment():
 
         if LOG_DATA:
             timestampString = str(time.time())
-            csvwriter.writerow([timestampString] + xd + x_update + xd_actual)
-            csvwrite.writerow([timestampString] +
+            #csvwriter.writerow([timestampString] + xd + x_update + xd_actual)
+            csvwriter.writerow([timestampString] +
                                waypoints_cf1[i] + x_update_cf1 +
                                waypoints_cf2[i] + x_update_cf2)
 
@@ -137,7 +142,7 @@ if __name__ == '__main__':
     except Exception as e:
         print ("##### Python exception occurred! Returning to start location and landing #####")
         cf1.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
-        cf2.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
+        cf2.goTo(cf2_takeoff_pos, yaw=0.0, duration=3.0)
         timeHelper.sleep(4.0)
         cf1.land(targetHeight=0.05, duration=3.0)
         cf2.land(targetHeight=0.05, duration=3.0)

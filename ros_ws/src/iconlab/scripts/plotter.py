@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "experiment_data/012122-17:29:38-data.csv"
+filename = "experiment_data/012422-10:33:04-data.csv"
 
 data = np.genfromtxt(filename, delimiter=',', skip_header=2)
 
