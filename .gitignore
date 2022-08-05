@@ -11,3 +11,4 @@ firm
 client
 launch # ignore launch symlink
 !*ros_ws/*launch* # don't ignore folders with launch in the name
+ros_ws/src/iconlab/scripts/experiment_data/
