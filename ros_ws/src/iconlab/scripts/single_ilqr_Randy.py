@@ -75,7 +75,7 @@ def perform_experiment():
     n_controls = 3
 
     dt = 0.1
-    N = 20
+    N = 50
     tol = 1e-3
     ids = [100 + i for i in range(n_agents)]
     model = dec.QuadcopterDynamics6D
@@ -102,7 +102,7 @@ def perform_experiment():
     
         X, U, J = dec.solve_rhc(
                         prob, x, N, radius,
-                        centralized=False,
+                        centralized=True,
                         n_d=n_d,
                         step_size=step_size, 
                         dist_converge=0.1,
