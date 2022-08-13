@@ -136,7 +136,7 @@ def perform_experiment():
     for i in range(LOOP_ITERS):
     
         X, U, J = dec.solve_rhc(
-                        prob, x0, N, radius,
+                        prob, x, N, radius,
                         centralized=True,
                         n_d=n_d,
                         step_size=step_size, 
@@ -148,38 +148,48 @@ def perform_experiment():
 
         # print("shape of array X is :" + str(X.shape))
         
-        xd = [X[0,3*(i):3*(i+1)] for i in range(n_agents)] #x, y, z coordinates from the solved trajectory X
-        
-        cf1.goTo(xd, yaw=0.0, duration=GOTO_DURATION)
-        
+        xd1 = X[step_size,0:3] #x, y, z coordinates from the solved trajectory X
+        cf1.goTo(xd1, yaw=0.0, duration=GOTO_DURATION)
+
+        xd2 = X[step_size,6:9] #x, y, z coordinates from the solved trajectory X
+        cf2.goTo(xd2, yaw=0.0, duration=GOTO_DURATION)
+
+        xd3 = X[step_size,12:15] #x, y, z coordinates from the solved trajectory X
+        cf3.goTo(xd3, yaw=0.0, duration=GOTO_DURATION)
+    
+
         """
         listener.lookupTransform returns two lists: the 1st list are (x,y,z) linear transformations
         of the child frame relative to the parent frame, and the second list are (x,y,z,w) quarternion 
         required to rotate from the parent oreintation to the child oreintation
         """
-        try:
-                (pos_cf1,rot_cf1) = listener.lookupTransform('/world', '/cf1', rospy.Time(0))
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                
-                continue
+        pos_cf1, _ = listener.lookupTransform('/world', '/cf1', rospy.Time(0))
+        pos_cf1 = np.array(pos_cf1)
+
+        pos_cf2, _ = listener.lookupTransform('/world', '/cf2', rospy.Time(0))
+        pos_cf2 = np.array(pos_cf2)
+
+        pos_cf3, _ = listener.lookupTransform('/world', '/cf3', rospy.Time(0))
+        pos_cf3 = np.array(pos_cf3)
+
 
         # Only reaches here if a /tf message was received
         print("CF1 Position: " + str(pos_cf1))
-        # print("CF1 Rotation: " + str(rot_cf1))
+        print("CF2 Position: " + str(pos_cf2))
+        print("CF3 Position: " + str(pos_cf3))
         
-        x_update = [pos_cf1[0], pos_cf1[1], pos_cf1[2], rot_cf1[3], rot_cf1[0], rot_cf1[1], rot_cf1[2]]
-        
-        print("X Update: " + str(x_update))
-        
-        x_prev = x
+        x_prev = x.copy()
         # x[:,0:3] = x_update[0:3]
         
-        dV = (x_update-x_prev)/dt  #this is a vector of length 3
-        # x[:,3:6] = dV
+        dV1 = (pos_cf1-x_prev[0:3])/dt
+        dV2 = (pos_cf1-x_prev[6:9])/dt
+        dV3 = (pos_cf1-x_prev[12:15])/dt
+
+        x = np.hstack([pos_cf1, dV1, pos_cf2, dV2, pos_cf3, dV3])
 
         if LOG_DATA:
                 timestampString = str(time.time())
-                csvwriter.writerow([timestampString] + xd + x_update)
+                csvwriter.writerow([timestampString] +  x)
 
         rate.sleep()
 
@@ -187,12 +197,20 @@ def perform_experiment():
 
     cf1.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
     timeHelper.sleep(4.0)
-
     cf1.land(targetHeight=0.05, duration=3.0)
     timeHelper.sleep(4.0)
 
-    
+    cf2.goTo(cf2_takeoff_pos, yaw=0.0, duration=3.0)
+    timeHelper.sleep(4.0)
+    cf2.land(targetHeight=0.05, duration=3.0)
+    timeHelper.sleep(4.0)
 
+    cf3.goTo(cf3_takeoff_pos, yaw=0.0, duration=3.0)
+    timeHelper.sleep(4.0)
+    cf3.land(targetHeight=0.05, duration=3.0)
+    timeHelper.sleep(4.0)
+
+    
 if __name__ == '__main__':
     #rospy.init_node('tf_listener')
 
@@ -229,9 +247,29 @@ if __name__ == '__main__':
         timeHelper.sleep(4.0)
         cf1.land(targetHeight=0.05, duration=3.0)
         timeHelper.sleep(4.0)
+
+        cf2.goTo(cf2_takeoff_pos, yaw=0.0, duration=3.0)
+        timeHelper.sleep(4.0)
+        cf2.land(targetHeight=0.05, duration=3.0)
+        timeHelper.sleep(4.0)
+
+        cf3.goTo(cf3_takeoff_pos, yaw=0.0, duration=3.0)
+        timeHelper.sleep(4.0)
+        cf3.land(targetHeight=0.05, duration=3.0)
+        timeHelper.sleep(4.0)
+
+
         raise(e)
 
     except KeyboardInterrupt:
         print ("##### KeyboardInterrupt detected. Landing all CFs  #####")
+
         cf1.land(targetHeight=0.05, duration=3.0)
         timeHelper.sleep(4.0)
+
+        cf2.land(targetHeight=0.05, duration=3.0)
+        timeHelper.sleep(4.0)
+
+        cf3.land(targetHeight=0.05, duration=3.0)
+        timeHelper.sleep(4.0)
+
