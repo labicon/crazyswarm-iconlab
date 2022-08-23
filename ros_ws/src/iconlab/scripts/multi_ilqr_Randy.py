@@ -75,26 +75,10 @@ def perform_experiment():
     
     # Wait for button press for take off
     input("##### Press Enter to Take Off #####")
-
-    cf1.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
-    timeHelper.sleep(TAKEOFF_DURATION)
-
-    cf1.goTo(cf1_start_pos, yaw=0.0, duration=2.0)
-    timeHelper.sleep(2.0)
-
-    cf2.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
-    timeHelper.sleep(TAKEOFF_DURATION)
-
-    cf2.goTo(cf2_start_pos, yaw=0.0, duration=2.0)
-    timeHelper.sleep(2.0)
-
-    cf3.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
-    timeHelper.sleep(TAKEOFF_DURATION)
-
-    cf3.goTo(cf3_start_pos, yaw=0.0, duration=2.0)
-    timeHelper.sleep(2.0)
-
-
+    
+    swarm.allcfs.takeoff(targetHeight=TAKEOFF_Z, duration=1.0+TAKEOFF_Z)
+    timeHelper.sleep(1.5+TAKEOFF_Z)
+    
     # Wait for button press to begin experiment
     input("##### Press Enter to Begin Experiment #####")
     

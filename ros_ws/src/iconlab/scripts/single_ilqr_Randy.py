@@ -16,6 +16,7 @@ import math
 import tf
 import geometry_msgs.msg
 from pycrazyswarm import *
+from pycrazyswarm import crazyflie
 import datetime
 import csv
 import time
@@ -25,7 +26,7 @@ datetimeString = datetime.datetime.now().strftime("%m%d%y-%H:%M:%S")
 csv_filename = "experiment_data/" + datetimeString + "-data.csv"
 
 # Enable or disable data logging
-LOG_DATA = True
+LOG_DATA = False
 
 TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
@@ -33,9 +34,10 @@ TAKEOFF_DURATION = 3.0
 # Used to tune aggresiveness of low-level controller
 GOTO_DURATION = 1.75
 
+#Using drone No. 10:
 # Defining takeoff and experiment start position
-cf1_takeoff_pos = [0.0, 0.0, 1.0]
-cf1_start_pos = [-2.0, 0.0, 1.0]
+cf10_takeoff_pos = [0.0, 0.0, 1.0]
+cf10_start_pos = [-2.0, 0.0, 1.0]
 
 """
 The states of the quadcopter are: px, py ,pz, vx, vy, vz
@@ -47,27 +49,27 @@ def perform_experiment():
     # Wait for button press for take off
     input("##### Press Enter to Take Off #####")
 
-    cf1.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
+    cf10.takeoff(TAKEOFF_Z, TAKEOFF_DURATION)
     timeHelper.sleep(TAKEOFF_DURATION)
 
-    cf1.goTo(cf1_start_pos, yaw=0.0, duration=2.0)
+    cf10.goTo(cf10_start_pos, yaw=0.0, duration=2.0)
     timeHelper.sleep(2.0)
 
     # Wait for button press to begin experiment
     input("##### Press Enter to Begin Experiment #####")
     
     #Decentrzlied iLQR code here:
-    cf1_goal_pos = [5.0, 5.0, 1.2]
+    cf10_goal_pos = [3.0, 3.0, 1.5]
 
-    x = np.hstack([cf1_start_pos, np.zeros((1, 3))])
-    x_goal = np.hstack([cf1_goal_pos, np.zeros((1, 3))])
+    x = np.hstack([cf10_start_pos, np.zeros(3)])
+    x_goal = np.hstack([cf10_goal_pos, np.zeros((3))])
 
     n_agents = 1
     n_states = 6
     n_controls = 3
 
     dt = 0.1
-    N = 50
+    N = 10
     tol = 1e-3
     ids = [100 + i for i in range(n_agents)]
     model = dec.QuadcopterDynamics6D
@@ -87,8 +89,7 @@ def perform_experiment():
     game_cost = dec.GameCost(goal_costs, prox_cost)
 
     prob = dec.ilqrProblem(dynamics, game_cost)
-    step_size = 1
-
+    step_size = 5
     n_d = 3
     
     for i in range(LOOP_ITERS):
@@ -107,40 +108,41 @@ def perform_experiment():
         # print("shape of array X is :" + str(X.shape))
         xd = X[step_size,0:3] #x, y, z coordinates from the solved trajectory X
         
-        cf1.goTo(xd, yaw=0.0, duration=GOTO_DURATION)
+        cf10.goTo(xd, yaw=0.0, duration=GOTO_DURATION)
         
         """
         listener.lookupTransform returns two lists: the 1st list are (x,y,z) linear transformations
         of the child frame relative to the parent frame, and the second list are (x,y,z,w) quarternion 
         required to rotate from the parent oreintation to the child oreintation
         """
-        pos_cf1, _ = listener.lookupTransform('/world', '/cf1', rospy.Time(0))
-        pos_cf1 = np.array(pos_cf1)
+        pos_cf, _ = listener.lookupTransform('/world', '/cf10', rospy.Time(0))
+        pos_cf = np.array(pos_cf)
+        
         # try:
         #     (pos_cf1,rot_cf1) = listener.lookupTransform('/world', '/cf1', rospy.Time(0))
         # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         #     continue
 
         # Only reaches here if a /tf message was received
-        print("CF1 Position: " + str(pos_cf1))
-        # print("CF1 Rotation: " + str(rot_cf1))
+        print("CF Position: " + str(pos_cf))
+        
         
         x_prev = x.copy()
-        dV = (pos_cf1 - x_prev[0:3]) / dt  #this is a vector of length 3
-        x = np.hstack([pos_cf1, dV])
+        dV = (pos_cf - x_prev[0:3]) / dt  #this is a vector of length 3
+        x = np.hstack([pos_cf, dV])
 
         if LOG_DATA:
                 timestampString = str(time.time())
-                csvwriter.writerow([timestampString] + xd + pos_cf1)
+                csvwriter.writerow([timestampString] + pos_cf)
 
         rate.sleep()
 
     input("##### Press Enter to Go Back to Origin #####")
 
-    cf1.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
+    cf10.goTo(cf10_takeoff_pos, yaw=0.0, duration=3.0)
     timeHelper.sleep(4.0)
 
-    cf1.land(targetHeight=0.05, duration=3.0)
+    cf10.land(targetHeight=0.05, duration=3.0)
     timeHelper.sleep(4.0)
 
     
@@ -155,7 +157,8 @@ if __name__ == '__main__':
 
     num_cfs = len(swarm.allcfs.crazyflies)
 
-    cf1 = swarm.allcfs.crazyflies[0]
+    # cf10 = swarm.allcfs.crazyflies[0]
+    cf10 = crazyflie.Crazyflie(10,cf10_start_pos,tf).setGroupMask(0) #this is right?
 
     listener = tf.TransformListener()
 
@@ -175,13 +178,13 @@ if __name__ == '__main__':
 
     except Exception as e:
         print ("##### Python exception occurred! Returning to start location and landing #####")
-        cf1.goTo(cf1_takeoff_pos, yaw=0.0, duration=3.0)
+        cf10.goTo(cf10_takeoff_pos, yaw=0.0, duration=3.0)
         timeHelper.sleep(4.0)
-        cf1.land(targetHeight=0.05, duration=3.0)
+        cf10.land(targetHeight=0.05, duration=3.0)
         timeHelper.sleep(4.0)
         raise(e)
 
     except KeyboardInterrupt:
         print ("##### KeyboardInterrupt detected. Landing all CFs  #####")
-        cf1.land(targetHeight=0.05, duration=3.0)
+        cf10.land(targetHeight=0.05, duration=3.0)
         timeHelper.sleep(4.0)
