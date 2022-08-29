@@ -33,10 +33,10 @@ csv_filename = "experiment_data/" + datetimeString + "-data.csv"
 LOG_DATA = False
 
 TAKEOFF_Z = 1.0
-TAKEOFF_DURATION = 3.5
+TAKEOFF_DURATION = 3.0
 
 # Used to tune aggresiveness of low-level controller
-GOTO_DURATION = 4.0
+GOTO_DURATION = 3.5
 GOHOME_DURATION = 6.0
 
 FLY = True
@@ -64,7 +64,6 @@ def perform_experiment(centralized=False):
     # Wait for button press for take off
     input("##### Press Enter to Take Off #####")
 
-    allcfs = swarm.allcfs
     if FLY:
         allcfs.takeoff(targetHeight=TAKEOFF_Z, duration=1.0+TAKEOFF_Z)
         timeHelper.sleep(TAKEOFF_DURATION)
@@ -152,10 +151,11 @@ def perform_experiment(centralized=False):
         print(f"CF states: \n{xi.reshape(n_agents, n_states)}\n")
         print(f"Predicted state error: {state_error}")
 
-        # # Offset the currently predicted states with the actual ones.
-        # X[:, pos_mask(x_dims, 3)] += xi[pos_mask(x_dims, 3)]
-        # # TODO: see if this velocity makes sense here.
+        # Replace the currently predicted states with the actual ones.
+        X[0, pos_mask(x_dims, 3)] = xi[pos_mask(x_dims, 3)]
+        # TODO: see if this velocity makes sense here.
         # X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
+        X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
 
         plt.clf()
         plot_solve(X_full, J, x_goal, x_dims, n_d=3)
@@ -184,12 +184,14 @@ if __name__ == '__main__':
     swarm = Crazyswarm()
     # swarm.allcfs.setParam("colAv/enable", 1) THIS LINE GIVES WARNING WHEN LAUNCHED
     timeHelper = swarm.timeHelper
+    allcfs = swarm.allcfs
+    # timeHelper.sleep(1.5+TAKEOFF_Z)
 
     num_cfs = len(swarm.allcfs.crazyflies)
 
     listener = tf.TransformListener()
 
-    rate = rospy.Rate(5.0)
+    rate = rospy.Rate(10.0)
 
     if LOG_DATA:
         print("### Logging data to file: " + csv_filename)
@@ -200,7 +202,7 @@ if __name__ == '__main__':
         csvwriter.writerow(["Timestamp [s]"] + num_cfs*["x_d", "y_d", "z_d", " x", "y", "z", "qw", "qx", "qy", "qz"])
 
     try:
-        perform_experiment()
+        perform_experiment(centralized=False)
 
     except Exception as e:
         print ("##### Python exception occurred! Returning to start location and landing #####")
