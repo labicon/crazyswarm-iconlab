@@ -377,7 +377,7 @@ class Crazyflie:
         # TODO: should we set pos, acc, yaw to zero, or rely on modes to not read them?
 
     def cmdStop(self):
-        # TODO: set mode to MODE_IDLE?
+        # TODO: set mode to MODE_IDLE?``
         pass
 
     def integrate(self, time, disturbanceSize, maxVel):
