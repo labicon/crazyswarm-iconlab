@@ -340,6 +340,12 @@ class Crazyflie:
         position, quaternion = self.tf.lookupTransform("/world", "/cf" + str(self.id), rospy.Time(0))
         return np.array(position)
 
+    def velocity(self):
+        
+        self.tf.waitForTransform("/world", "/cf" + str(self.id), rospy.Time(0), rospy.Duration(10))
+        vel, _ = self.tf.lookupTwist("/world", "/cf" + str(self.id), rospy.Time(0), rospy.Duration(0.05))
+        return np.array(vel)
+
     def getParam(self, name):
         """Returns the current value of the onboard named parameter.
 
@@ -689,3 +695,8 @@ class CrazyflieServer:
         """Broadcasted setParam. See Crazyflie.setParam() for details."""
         rospy.set_param("/allcfs/" + name, value)
         self.updateParamsService([name])
+
+    def goToAbsolute(self, goals, yaw=0.0): #changed from cf.goTo() to cf.cmdPosition()
+        for pos, cf in zip(goals, self.crazyflies):
+            # cf.goTo(pos, yaw, duration)
+            cf.cmdPosition(pos, yaw)
