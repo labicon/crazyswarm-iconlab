@@ -21,8 +21,6 @@ import datetime
 import csv
 import time
 
-
-    
 plt.ion()
 
 # Assemble filename for logged data
@@ -68,7 +66,8 @@ def perform_experiment(centralized=False):
     if FLY:
         allcfs.takeoff(targetHeight=TAKEOFF_Z, duration=1.0+TAKEOFF_Z)
         timeHelper.sleep(TAKEOFF_DURATION)
-        allcfs.goToAbsolute(start_pos_list, duration=GOTO_DURATION)
+        allcfs.goToAbsolute(start_pos_list)
+
 
     # Wait for button press to begin experiment
     input("##### Press Enter to Begin Experiment #####")
@@ -138,24 +137,24 @@ def perform_experiment(centralized=False):
         # x, y, z coordinates from the solved trajectory X.
         xd = X[step_size].reshape(n_agents, n_states)[:, :3]
         if FLY:
-            swarm.allcfs.goToAbsolute(xd, duration=GOTO_DURATION)
+            swarm.allcfs.goToAbsolute(xd)
    
-        pos_cfs = [cf.position() for cf in swarm.allcfs.crazyflies]
-        vel_cfs = [cf.velocity() for cf in swarm.allcfs.crazyflies]
+        pos_cfs = [cf.position() for cf in swarm.allcfs.crazyflies] #position update from VICON
+        vel_cfs = [cf.velocity() for cf in swarm.allcfs.crazyflies] #velocity update from VICON
 
         # x_prev = xi.copy()
         # dV = (pos_cf - x_prev[0:3]) / dt
         # x = np.hstack([pos_cf, dV])
         xi = np.hstack([pos_cfs, vel_cfs]).flatten()
-
+        
         state_error = np.abs(X[0] - xi)
         print(f"CF states: \n{xi.reshape(n_agents, n_states)}\n")
         print(f"Predicted state error: {state_error}")
 
         # # Offset the currently predicted states with the actual ones.
-        # X[:, pos_mask(x_dims, 3)] += xi[pos_mask(x_dims, 3)]
+        X[:, pos_mask(x_dims, 3)] += xi[pos_mask(x_dims, 3)]
         # # TODO: see if this velocity makes sense here.
-        # X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
+        X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
 
         plt.clf()
         plot_solve(X_full, J, x_goal, x_dims, n_d=3)
@@ -171,7 +170,7 @@ def perform_experiment(centralized=False):
     input("##### Press Enter to Go Back to Origin #####")
     
     if FLY:
-        swarm.allcfs.goToAbsolute(start_pos_list, duration=GOTO_DURATION)
+        swarm.allcfs.goToAbsolute(start_pos_list)
         timeHelper.sleep(4.0)
 
         swarm.allcfs.land(targetHeight=0.05, duration=GOTO_DURATION)
@@ -205,7 +204,7 @@ if __name__ == '__main__':
     except Exception as e:
         print ("##### Python exception occurred! Returning to start location and landing #####")
         if FLY:
-            swarm.allcfs.goToAbsolute(start_pos_list, duration=GOTO_DURATION)
+            swarm.allcfs.goToAbsolute(start_pos_list)
             timeHelper.sleep(4.0)
             swarm.allcfs.land(targetHeight=0.05, duration=3.0)
             timeHelper.sleep(4.0)
