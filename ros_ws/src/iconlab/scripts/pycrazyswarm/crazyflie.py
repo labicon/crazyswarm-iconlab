@@ -696,7 +696,7 @@ class CrazyflieServer:
         rospy.set_param("/allcfs/" + name, value)
         self.updateParamsService([name])
 
-    def goToAbsolute(self, goals, yaw=0.0): #changed from cf.goTo() to cf.cmdPosition()
+    def goToAbsolute(self, goals, yaw=0.0, duration = 4.0): 
         for pos, cf in zip(goals, self.crazyflies):
-            # cf.goTo(pos, yaw, duration)
-            cf.cmdPosition(pos, yaw)
+            cf.goTo(pos, yaw, duration)
+            # cf.cmdPosition(pos, yaw) #oops, not fast enough
