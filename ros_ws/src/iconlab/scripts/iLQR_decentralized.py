@@ -34,22 +34,22 @@ TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
 
 # Used to tune aggresiveness of low-level controller
-GOTO_DURATION = 3.5
+GOTO_DURATION = 2.5
 GOHOME_DURATION = 6.0
 
 FLY = True
 
 # Defining takeoff and experiment start position
-start_pos_drone1 = [0., 0., 1.0]
-start_pos_drone2 = [0.5, 0.5, 1.0]
-start_pos_drone3 = [-0.5, -0.5, 1.0]
+start_pos_drone1 = [0.0, 1.0, 1.0]
+start_pos_drone2 = [2.0, -1.0, 1.0]
+start_pos_drone3 = [-1.0,-2.0, 1.0]
 
-goal_pos_drone1 = [3.0, 3.0, 3.0]
-goal_pos_drone2 = [-3.0, 3.0, 2.5]
-goal_pos_drone3 = [2.5, 1.5, 3.1]
+goal_pos_drone1 = [1.5, 1.5, 1.0]
+goal_pos_drone2 = [-2, 1.0, 1.0]
+goal_pos_drone3 = [1.0, 2.0, 1.0]
 
-start_pos_list = [start_pos_drone1,start_pos_drone2,start_pos_drone3]
-goal_pos_list = [goal_pos_drone1,goal_pos_drone2 , goal_pos_drone3]
+start_pos_list = [start_pos_drone1, start_pos_drone2, start_pos_drone3]
+goal_pos_list = [goal_pos_drone1, goal_pos_drone2 , goal_pos_drone3]
 
 
 """
@@ -80,7 +80,7 @@ def perform_experiment(centralized=False):
     x_goal = np.hstack([goal_pos_list,np.zeros((n_agents,3))]).flatten()
 
     dt = 0.1
-    N = 10
+    N = 5
     ids = [100 + i for i in range(n_agents)]
     model = dec.QuadcopterDynamics6D
     dynamics = dec.MultiDynamicalModel([model(dt, id_) for id_ in ids])
@@ -111,7 +111,7 @@ def perform_experiment(centralized=False):
     X = np.tile(xi,(N+1, 1))
     
     while not np.all(dec.distance_to_goal(xi,x_goal,n_agents,n_states,3) <= 0.2):
-
+        t0 = pc()
         # How to feed state back into decentralization?
         #  1. Only decentralize at the current state.
         #  2. Offset the predicted trajectory by the current state.
@@ -124,6 +124,8 @@ def perform_experiment(centralized=False):
             X, U, J, _ = dec.solve_decentralized(
                 prob, X, U, radius, pool=None, verbose=False
                 )
+        tf = pc()
+        print(f"Time taken is {tf-t0}")
         
         # Record which steps were taken for plotting.
         X_full = np.r_[X_full, X[:step_size]]
@@ -136,7 +138,7 @@ def perform_experiment(centralized=False):
         # x, y, z coordinates from the solved trajectory X.
         xd = X[step_size].reshape(n_agents, n_states)[:, :3]
         if FLY:
-            swarm.allcfs.goToAbsolute(xd)
+            swarm.allcfs.goToAbsolute(xd, duration = GOTO_DURATION)
    
         pos_cfs = [cf.position() for cf in swarm.allcfs.crazyflies] #position update from VICON
         vel_cfs = [cf.velocity() for cf in swarm.allcfs.crazyflies] #velocity update from VICON
@@ -150,12 +152,12 @@ def perform_experiment(centralized=False):
         print(f"CF states: \n{xi.reshape(n_agents, n_states)}\n")
         print(f"Predicted state error: {state_error}")
 
+        # # Replace the currently predicted states with the actual ones.
+        # X[0, pos_mask(x_dims, 3)] = xi[pos_mask(x_dims, 3)]
+        # # TODO: see if this velocity makes sense here.
+        # X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
 
-        # Replace the currently predicted states with the actual ones.
-        X[0, pos_mask(x_dims, 3)] = xi[pos_mask(x_dims, 3)]
-        # TODO: see if this velocity makes sense here.
-
-        X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
+        X = np.tile(xi, (N+1,1))
 
         plt.clf()
         plot_solve(X_full, J, x_goal, x_dims, n_d=3)
@@ -171,7 +173,7 @@ def perform_experiment(centralized=False):
     input("##### Press Enter to Go Back to Origin #####")
     
     if FLY:
-        swarm.allcfs.goToAbsolute(start_pos_list)
+        swarm.allcfs.goToAbsolute(start_pos_list,duration = GOTO_DURATION)
         timeHelper.sleep(4.0)
 
         swarm.allcfs.land(targetHeight=0.05, duration=GOTO_DURATION)
@@ -191,7 +193,7 @@ if __name__ == '__main__':
 
     listener = tf.TransformListener()
 
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(2)
 
     if LOG_DATA:
         print("### Logging data to file: " + csv_filename)
@@ -202,12 +204,12 @@ if __name__ == '__main__':
         csvwriter.writerow(["Timestamp [s]"] + num_cfs*["x_d", "y_d", "z_d", " x", "y", "z", "qw", "qx", "qy", "qz"])
 
     try:
-        perform_experiment(centralized=False)
+        perform_experiment(centralized=True)
 
     except Exception as e:
         print ("##### Python exception occurred! Returning to start location and landing #####")
         if FLY:
-            swarm.allcfs.goToAbsolute(start_pos_list)
+            swarm.allcfs.goToAbsolute(start_pos_list,duration = GOTO_DURATION)
             timeHelper.sleep(4.0)
             swarm.allcfs.land(targetHeight=0.05, duration=3.0)
             timeHelper.sleep(4.0)
