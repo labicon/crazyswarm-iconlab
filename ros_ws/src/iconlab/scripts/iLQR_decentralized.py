@@ -28,7 +28,7 @@ datetimeString = datetime.datetime.now().strftime("%m%d%y-%H:%M:%S")
 csv_filename = "experiment_data/" + datetimeString + "-data.csv"
 
 # Enable or disable data logging
-LOG_DATA = False
+LOG_DATA = True
 
 TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
@@ -88,7 +88,7 @@ def perform_experiment(centralized=False):
     Qf = 100 * np.eye(Q.shape[0])
     R = np.diag([0., 1., 1.])
 
-    radius = 0.5
+    radius = 1.0
     x_dims = [n_states] * n_agents
     # u_dims = [n_controls] * n_agents
     
@@ -138,7 +138,7 @@ def perform_experiment(centralized=False):
         # x, y, z coordinates from the solved trajectory X.
         xd = X[step_size].reshape(n_agents, n_states)[:, :3]
         if FLY:
-            swarm.allcfs.goToAbsolute(xd, duration = GOTO_DURATION)
+            swarm.allcfs.goToAbsolute(xd, duration = 1.5)
    
         pos_cfs = [cf.position() for cf in swarm.allcfs.crazyflies] #position update from VICON
         vel_cfs = [cf.velocity() for cf in swarm.allcfs.crazyflies] #velocity update from VICON
@@ -173,7 +173,7 @@ def perform_experiment(centralized=False):
     input("##### Press Enter to Go Back to Origin #####")
     
     if FLY:
-        swarm.allcfs.goToAbsolute(start_pos_list,duration = GOTO_DURATION)
+        swarm.allcfs.goToAbsolute(start_pos_list,duration = GOTO_DURATION*3)
         timeHelper.sleep(4.0)
 
         swarm.allcfs.land(targetHeight=0.05, duration=GOTO_DURATION)
