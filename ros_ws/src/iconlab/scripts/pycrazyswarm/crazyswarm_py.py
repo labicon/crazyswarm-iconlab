@@ -1,5 +1,6 @@
 import argparse
 import atexit
+from pathlib import Path
 
 import numpy as np
 
@@ -37,8 +38,8 @@ class Crazyswarm:
         args, unknown = parser.parse_known_args(args)
 
         if crazyflies_yaml is None:
-            crazyflies_yaml = "../launch/crazyflies.yaml"
-        if crazyflies_yaml.endswith(".yaml"):
+            crazyflies_yaml = Path(__file__).parent.resolve() / "../../launch/crazyflies.yaml"
+        if crazyflies_yaml.name.endswith(".yaml"):
             crazyflies_yaml = open(crazyflies_yaml, 'r').read()
 
         if args.sim:
