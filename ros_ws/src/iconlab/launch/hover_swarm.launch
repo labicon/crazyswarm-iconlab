@@ -40,7 +40,7 @@
       write_csvs: False
       force_no_cache: False
       enable_parameters: True
-      enable_logging: True
+      enable_logging: False
       enable_logging_pose: True
     </rosparam>
   </node>

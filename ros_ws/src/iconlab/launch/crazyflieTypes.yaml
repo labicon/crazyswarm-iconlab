@@ -3,7 +3,7 @@ crazyflieTypes:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
     batteryVoltateCritical: 3.7 # V
-    markerConfiguration: 4 # asymmetric marker configuration
+    markerConfiguration: 0 # asymmetric marker configuration
     dynamicsConfiguration: 0
     firmwareParams:
       ctrlMel:
@@ -165,14 +165,6 @@ markerConfigurations:
     offset: [0.0, -0.01, -0.04]
     points:
       "0": [0.0177184,0.0139654,0.0557585]
-  "4": # Updated asymmetric configuration 8/23/22
-    numPoints: 4
-    offset: [0.0, 0.0, -0.05]
-    points:
-      "0": [-0.014410192146897316, 0.005835776217281818, 0.05814819410443306]
-      "1": [-0.00790492445230484, 0.03597141057252884, 0.057980943471193314]
-      "2": [-0.009637178853154182, -0.0245378240942955, 0.05787039175629616]
-      "3": [0.02148396708071232, 0.004681081511080265, 0.056301336735486984]
 
 numDynamicsConfigurations: 1
 dynamicsConfigurations:
