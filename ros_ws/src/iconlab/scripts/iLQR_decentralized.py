@@ -131,7 +131,7 @@ def perform_experiment(centralized=False, sim=False):
             X, U, J, _ = dec.solve_decentralized(
                 prob, X, U, d_prox, pool=None, verbose=False
                 )
-
+   
         tf = pc()
         print(f"Solve time: {tf-t0}")
         
