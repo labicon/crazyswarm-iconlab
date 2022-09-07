@@ -117,6 +117,8 @@ def perform_experiment(centralized=False, sim=False):
     U_full = np.zeros((0, n_controls*n_agents))
     X = np.tile(xi,(N+1, 1))
     
+    t_kill = N*dt
+    
     while not np.all(dec.distance_to_goal(xi,x_goal,n_agents,n_states,3) <= d_converge):
         t0 = pc()
         # How to feed state back into decentralization?
@@ -129,7 +131,7 @@ def perform_experiment(centralized=False, sim=False):
             )
         else:
             X, U, J, _ = dec.solve_decentralized(
-                prob, X, U, d_prox, pool=None, verbose=False
+                prob, X, U, d_prox, t_kill, pool=None, verbose=False
                 )
    
         tf = pc()
