@@ -11,12 +11,12 @@ import sys
 import time
 from time import perf_counter as pc
 
-import decentralized as dec
+import dpilqr as dec
 import matplotlib.pyplot as plt
 import numpy as np
 import rospy
 import tf
-from decentralized import plot_solve, split_agents
+from dpilqr import plot_solve, split_agents
 
 import pycrazyswarm as crazy
 

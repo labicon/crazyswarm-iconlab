@@ -16,12 +16,12 @@ import sys
 import time
 from time import perf_counter as pc
 
-import decentralized as dec
+import dpilqr as dec
 import matplotlib.pyplot as plt
 import numpy as np
 import rospy
 import tf
-from decentralized import plot_solve, split_agents
+from dpilqr import plot_solve, split_agents
 from distributed_mpc import *
 from centralized_mpc import *
 import pycrazyswarm as crazy
@@ -119,8 +119,8 @@ goal_pos_list = [goal_pos_drone1, goal_pos_drone2 , goal_pos_drone3]
 # start_pos_drones = paper_setup_10_quads()[0][dec.pos_mask([6]*10, 3)].flatten().tolist()
 # goal_pos_drones = paper_setup_10_quads()[1][dec.pos_mask([6]*10, 3)].flatten().tolist()
 
-for i in range(1,11):
-    f'start_pos_drone{0}.format(i)' = 
+# for i in range(1,11):
+#     f'start_pos_drone{0}.format(i)' = 
 
 # start_pos_list = [start_pos_drone1, start_pos_drone2, start_pos_drone3,
 #                     start_pos_drone4,start_pos_drone5]
@@ -183,8 +183,8 @@ def perform_experiment(centralized=False, sim=False):
     
     
     x = np.hstack([start_pos_list,np.zeros((n_agents,3))]).flatten() 
-    x_goal = np.hstack([goal_pos_list,np.zeros((n_agents,3))]).flatten()
-    xi = x.reshape(1, -1)
+    x_goal = np.hstack([goal_pos_list,np.zeros((n_agents,3))]).flatten().reshape(-1,1)
+    xi = x.reshape(-1, 1)
 
     dt = 0.1
     N = 10
@@ -198,7 +198,7 @@ def perform_experiment(centralized=False, sim=False):
     U_full = np.zeros((0, n_controls*n_agents))
     X = np.tile(xi,(N+1, 1))
     
-    step_size = 1
+    step_size = 0
     n_humans = 0
     d_converge = 0.1
     while not np.all(dec.distance_to_goal(xi,x_goal,n_agents,n_states,3) <= d_converge):
@@ -242,30 +242,30 @@ def perform_experiment(centralized=False, sim=False):
             # x_prev = xi.copy()
             # dV = (pos_cf - x_prev[0:3]) / dt
             # x = np.hstack([pos_cf, dV])
-            xi = np.hstack([pos_cfs, vel_cfs]).flatten()        
+            xi = np.hstack([pos_cfs, vel_cfs]).flatten().reshape(-1,1)    
         
         else:
-            xi = X[step_size]
+            xi = X[step_size].reshape(-1,1)
+        # print(X.shape,xi.shape)
+        # state_error = np.abs(X.reshape(-1,1) - xi)
+        # print(f"CF states: \n{xi.reshape(n_agents, n_states)}\n")
+        # print(f"Predicted state error: {state_error}")
 
-        state_error = np.abs(X[0] - xi)
-        print(f"CF states: \n{xi.reshape(n_agents, n_states)}\n")
-        print(f"Predicted state error: {state_error}")
+        # plt.figure(fig1.number)
+        # plt.clf()
+        # plot_solve(X_full, J, x_goal, x_dims, n_d=3)
+        # plt.title("Path Taken")
+        # plt.gca().set_zlim(0, 2)
 
-        plt.figure(fig1.number)
-        plt.clf()
-        plot_solve(X_full, J, x_goal, x_dims, n_d=3)
-        plt.title("Path Taken")
-        plt.gca().set_zlim(0, 2)
+        # plt.figure(fig2.number)
+        # plt.clf()
+        # plot_solve(X, J, x_goal, x_dims, n_d=3)
+        # plt.title("Path Planned")
+        # plt.gca().set_zlim(0, 2)
 
-        plt.figure(fig2.number)
-        plt.clf()
-        plot_solve(X, J, x_goal, x_dims, n_d=3)
-        plt.title("Path Planned")
-        plt.gca().set_zlim(0, 2)
-
-        fig1.canvas.draw()
-        fig2.canvas.draw()
-        plt.pause(1)
+        # fig1.canvas.draw()
+        # fig2.canvas.draw()
+        # plt.pause(1)
 
         # # Replace the currently predicted states with the actual ones.
         # X[0, pos_mask(x_dims, 3)] = xi[pos_mask(x_dims, 3)]

@@ -2,8 +2,8 @@ import numpy as np
 import itertools
 from casadi import *
 import casadi as cs
-import decentralized as dec
-from decentralized import random_setup
+import dpilqr as dec
+from dpilqr import random_setup
 
 def paper_setup_3_quads(random = False):
     
