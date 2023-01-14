@@ -205,8 +205,8 @@ def perform_experiment(centralized=False, sim=False):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--centralized", action="store_true", default=True)
-    parser.add_argument("-s", "--sim", action="store_true", default=True)
+    parser.add_argument("-c", "--centralized", action="store_true", default=False)
+    parser.add_argument("-s", "--sim", action="store_true", default=False)
     args = parser.parse_args()
 
     swarm = crazy.Crazyswarm()

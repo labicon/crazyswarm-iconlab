@@ -201,6 +201,8 @@ def perform_experiment(centralized=False, sim=False):
     step_size = 0
     n_humans = 0
     d_converge = 0.1
+
+    print('before while loop')
     while not np.all(dec.distance_to_goal(xi,x_goal,n_agents,n_states,3) <= d_converge):
         t0 = pc()
         # How to feed state back into decentralization?
@@ -219,7 +221,7 @@ def perform_experiment(centralized=False, sim=False):
                         xi, x_goal, u_ref, N, n_agents, n_states, n_inputs, radius, ids,\
                         x_min,x_max,y_min,y_max,z_min,z_max,v_min,v_max,theta_max,\
                     theta_min,tau_max,tau_min,phi_max,phi_min,n_humans,n_dims=None)
-   
+        
         tf = pc()
         print(f"Solve time: {tf-t0}")
         
@@ -290,8 +292,8 @@ def perform_experiment(centralized=False, sim=False):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--centralized", action="store_true", default=True)
-    parser.add_argument("-s", "--sim", action="store_true", default=True)
+    parser.add_argument("-c", "--centralized", action="store_true", default=False)
+    parser.add_argument("-s", "--sim", action="store_true", default=False)
     args = parser.parse_args()
 
     swarm = crazy.Crazyswarm()
