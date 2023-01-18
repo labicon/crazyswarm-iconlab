@@ -10,7 +10,7 @@ from time import perf_counter
 centralized = False
 def solve_distributed(
     x0, xf, u_ref, N, n_agents, n_states, n_inputs, radius, ids,\
-    x_min,x_max,y_min,y_max,z_min,z_max,v_min,v_max,theta_max,\
+    x_min,x_max,y_min,y_max,z_min,z_max,v_min,v_max,a_min,a_max,theta_max,\
   theta_min,tau_max,tau_min,phi_max,phi_min,n_humans,n_dims=None):
 
     x_dims = [n_states] * n_agents
@@ -103,7 +103,7 @@ def solve_distributed(
             )
         )
 
-    min_max_input_list = generate_min_max_input(inputs, n_inputs,theta_max,
+    min_max_input_list = generate_min_max_input(inputs, n_inputs,v_min,v_max,a_min,a_max,theta_max,
                         theta_min,tau_max,tau_min,phi_max,phi_min)
     min_max_state_list = generate_min_max_state(states, n_states,x_min,
                         x_max,y_min,y_max,z_min,z_max,v_min,v_max)
@@ -136,7 +136,7 @@ def solve_distributed(
         range(len(d)),
     ):  # loop over sub-problems
 
-        print(f"Solving the {count}th sub-problem at t = {t} \n")
+        print(f"Solving the {count}th sub-problem")
 
         min_states, max_states = state_boundsi
         min_inputs, max_inputs = input_boundsi
@@ -161,7 +161,8 @@ def solve_distributed(
                 n_dims_local+=[2]*2
                 f = generate_f_human_drone(x_dims_local,human_count)
         else:
-            f = generate_f(x_dims_local)
+            # f = generate_f(x_dims_local)
+            f = generate_f_double_int(x_dims_local)
             drones_count = len(x_dims_local)
             n_dims_local = [3]*drones_count
             human_count = None
@@ -222,8 +223,8 @@ def solve_distributed(
         except RuntimeError:
             print('Current problem is infeasible')
             failed_count +=1
-            # return X_full, U_full, t, J_list, failed_count, converged
-            break
+            return X_full, U_full, t, J_list, failed_count, converged
+            # continue
         
         
         objective_val += sol.value(costi)
@@ -232,8 +233,11 @@ def solve_distributed(
         )
         # print(sol.value(statesi).shape)
         x0_local = sol.value(statesi)[:, 1]
-
+        # x0_local = sol.value(statesi)[:, 5]
+    
         u_sol_local = sol.value(inputsi)[:, 0]
+        # u_sol_local = sol.value(inputsi)[:, 4]
+
 
         i_prob = ids_.index(prob)
 
@@ -245,24 +249,24 @@ def solve_distributed(
         U_dec[:, count * n_inputs : (count + 1) * n_inputs] = u_sol_local[
             i_prob * n_inputs : (i_prob + 1) * n_inputs
         ]
-
+    # t += dt
     
-        x0 = X_dec.reshape(-1, 1)
-        print(f"current collected solution is {x0.T} \n")
+    x0 = X_dec.reshape(-1, 1)
+    print(f"current collected solution is {x0.T} \n")
 
-        # print(x0)
-        J_list.append(
-            objective_val
-        )  # collect aggregate objective function from all sub-problems after each control horizon is over
-        print(
-            f"current combined objective value is {objective_val}##########################\n"
-        )
-        # Store the trajectory
+    # print(x0)
+    J_list.append(
+        objective_val
+    )  # collect aggregate objective function from all sub-problems after each control horizon is over
+    print(
+        f"current combined objective value is {objective_val}##########################\n"
+    )
+    # Store the trajectory
 
-        X_full = np.r_[X_full, X_dec.reshape(1, -1)]
-        U_full = np.r_[U_full, U_dec.reshape(1, -1)]
+    # X_full = np.r_[X_full, X_dec.reshape(1, -1)]
+    # U_full = np.r_[U_full, U_dec.reshape(1, -1)]
 
-        t += dt
+        
  
     logging.info(
         
@@ -271,4 +275,4 @@ def solve_distributed(
     )
         
 
-    return X_full, U_full, t, J_list, failed_count, converged
+    return X_dec, U_dec, t, J_list, failed_count, converged

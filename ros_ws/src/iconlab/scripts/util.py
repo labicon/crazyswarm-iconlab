@@ -216,6 +216,29 @@ def generate_f(x_dims_local):
     
     return f
 
+
+def generate_f_double_int(x_dims_local):
+    n_agents = len(x_dims_local)
+    n_states = x_dims_local[0]
+    n_controls = 6
+
+    def f(x,u):
+        x_dot = cs.MX.zeros(x.numel())
+        for i_agent in range(n_agents):
+            i_xstart = i_agent * n_states
+            i_ustart = i_agent * n_controls
+            
+            x_dot[i_xstart:i_xstart + n_states] = cs.vertcat(u[i_ustart:i_ustart+n_controls])
+        return x_dot
+    
+    return f
+
+
+
+
+
+
+
 def generate_f_human_drone(x_dims_local,n_human):
     g = 9.8
     # NOTE: Assume homogeneity of agents.
@@ -267,14 +290,17 @@ def objective(X, U, u_ref, xf, Q, R, Qf):
 
     return total_stage_cost + total_terminal_cost
 
-def generate_min_max_input(inputs_dict, n_inputs,theta_max,
+def generate_min_max_input(inputs_dict, n_inputs,v_min,v_max,a_min,a_max,theta_max,
                           theta_min,tau_max,tau_min,phi_max,phi_min,human_count = None):
 
     n_agents = [u.shape[0] // n_inputs for u in inputs_dict.values()]
 
-    u_min = np.array([[theta_min, phi_min, tau_min]])
-    u_max = np.array([[theta_max, phi_max, tau_max]])
-    
+    # u_min = np.array([[theta_min, phi_min, tau_min]])
+    u_min = np.array([[v_min, v_min, v_min, a_min,a_min, a_min]])
+
+    # u_max = np.array([[theta_max, phi_max, tau_max]])
+    u_max = np.array([[v_max, v_max, v_max, a_max,a_max, a_max]])
+
     if human_count:
         return [
         (np.tile(u_min, n_agents_i), np.tile(u_max, n_agents_i))

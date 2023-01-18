@@ -155,9 +155,7 @@ def perform_experiment(centralized=False, sim=False):
             
             # x_prev = xi.copy()
             # dV = (pos_cf - x_prev[0:3]) / dt
-            # x = np.hstack([pos_cf, dV])
-            xi = np.hstack([pos_cfs, vel_cfs]).flatten()        
-        
+      
         else:
             xi = X[step_size]
 

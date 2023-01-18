@@ -29,14 +29,14 @@ import pycrazyswarm as crazy
 
 
 #################################################
-theta_max = np.pi / 6
-phi_max = np.pi / 6
+theta_max = np.pi / 5
+phi_max = np.pi / 5
 
-v_max = 3
-v_min = -3
+v_max = 2
+v_min = -2
 
-theta_min = -np.pi / 6
-phi_min = -np.pi / 6
+theta_min = -np.pi / 5
+phi_min = -np.pi / 5
 
 tau_max = 15
 tau_min = 0
@@ -50,15 +50,22 @@ y_max = 5
 z_min = 0
 z_max = 4.0
 
-u_ref_base = np.array([0,0,g])
+a_max = 1.5
+a_min = -1.5
 
-max_input_base = np.array([[theta_max], [phi_max], [tau_max]])
-min_input_base = np.array([[theta_min], [phi_min], [tau_min]])
+# u_ref_base = np.array([0,0,g])
+u_ref_base = np.array([0,0,0,0,0,0])
+
+# max_input_base = np.array([[theta_max], [phi_max], [tau_max]])
+# min_input_base = np.array([[theta_min], [phi_min], [tau_min]])
+max_input_base = np.array([[v_max], [v_max], [v_max], [a_max],[a_max], [a_max]])
+min_input_base = np.array([[v_min], [v_min], [v_min], [a_min],[a_min], [a_min]])
+
 max_state_base = np.array([[x_max], [y_max], [z_max], [v_max],[v_max], [v_max]])
 min_state_base = np.array([[x_min], [y_min], [z_min], [v_min],[v_min], [v_min]])
 
 n_states = 6
-n_inputs = 3
+n_inputs = 6
 #############################################
 
 
@@ -76,14 +83,14 @@ TAKEOFF_Z = 1.0
 TAKEOFF_DURATION = 3.0
 
 # Used to tune aggresiveness of low-level controller
-GOTO_DURATION = 2.0
+GOTO_DURATION = 2.5
 
 # Defining takeoff and experiment start position
 
 """Case 1: 3 drones"""
-start_pos_drone1 = [0.5, 1.5, 1]
-start_pos_drone2 = [2.5, 1.5, 1]
-start_pos_drone3 = [1.5, 1.3, 1]
+start_pos_drone1 = [0.5, 1.0, 1]
+start_pos_drone2 = [3.0, 2.5, 1]
+start_pos_drone3 = [1.5, 1.0, 1]
 
 goal_pos_drone1 = [2.5, 1.5, 1]
 goal_pos_drone2 = [0.5, 1.5, 1]
@@ -163,7 +170,7 @@ def perform_experiment(centralized=False, sim=False):
 
     n_agents = 3
     n_states = 6
-    n_controls = 3
+    n_controls = 6
     n_dims = [3] * n_agents
     x_dims = [n_states] * n_agents
 
@@ -181,14 +188,13 @@ def perform_experiment(centralized=False, sim=False):
     u_ref = np.tile(u_ref_base,n_agents)
 
     
-    
     x = np.hstack([start_pos_list,np.zeros((n_agents,3))]).flatten() 
     x_goal = np.hstack([goal_pos_list,np.zeros((n_agents,3))]).flatten().reshape(-1,1)
     xi = x.reshape(-1, 1)
 
     dt = 0.1
-    N = 10
-    radius = 0.1
+    N = 15
+    radius = 0.5
     
     ids = [100 + i for i in range(n_agents)]
     U = np.zeros((N, n_controls*n_agents))
@@ -197,12 +203,12 @@ def perform_experiment(centralized=False, sim=False):
     X_full = np.zeros((0, n_states*n_agents))
     U_full = np.zeros((0, n_controls*n_agents))
     X = np.tile(xi,(N+1, 1))
-    
-    step_size = 0
+   
     n_humans = 0
     d_converge = 0.1
 
-    print('before while loop')
+    loop = 0
+
     while not np.all(dec.distance_to_goal(xi,x_goal,n_agents,n_states,3) <= d_converge):
         t0 = pc()
         # How to feed state back into decentralization?
@@ -210,77 +216,95 @@ def perform_experiment(centralized=False, sim=False):
         #  2. Offset the predicted trajectory by the current state.
         # Go with 2. and monitor the difference between the algorithm and VICON.
         if centralized:
-            X, U, _ , J , _, _ = solve_centralized(xi,x_goal,u_ref,
+            X, U, _ , J , failed_count, _ = solve_centralized(xi,x_goal,u_ref,
                                N,Q,R,Qf,n_agents,
                                n_states,n_inputs,
                                radius,max_input,
                                min_input,max_state,
                                min_state)
         else:
-            X, U, _ , J , _, _ = solve_distributed(
+            
+            X, U, _ , J , failed_count, _ = solve_distributed(
                         xi, x_goal, u_ref, N, n_agents, n_states, n_inputs, radius, ids,\
-                        x_min,x_max,y_min,y_max,z_min,z_max,v_min,v_max,theta_max,\
-                    theta_min,tau_max,tau_min,phi_max,phi_min,n_humans,n_dims=None)
-        
+                        x_min,x_max,y_min,y_max,z_min,z_max,v_min,v_max,a_min,a_max,theta_max,\
+                    theta_min,tau_max,tau_min,phi_max,phi_min,n_humans,n_dims)
         tf = pc()
+        
         print(f"Solve time: {tf-t0}")
+
+        # print(f'shape of X is {X.shape}')
+        # print(f'X_full has shape {X_full.shape}')
         
         # Record which steps were taken for plotting.
-        X_full = np.r_[X_full, X[:step_size]]
-        U_full = np.r_[U_full, U[:step_size]]
+        X_full = np.r_[X_full, X]
+        # U_full = np.r_[U_full, U]
+        print(f'Shape of X is {X.shape}')
 
-        # Seed the next iteration with the last state.
-        X = np.r_[X[step_size:], np.tile(X[-1], (step_size, 1))]
-        U = np.r_[U[step_size:], np.zeros((step_size, n_controls*n_agents))]
 
+        
+        print(f'X_full has shape {X_full.shape} at the {loop}th loop')
+
+        if failed_count !=0:
+            print(f'Infeasibility detected! ')
+            
+            # xd = X_full[loop-1,:].reshape(n_agents, n_states)[:, :3]
+            break
+        
+        loop +=1
+        
         # x, y, z coordinates from the solved trajectory X.
-        xd = X[step_size].reshape(n_agents, n_states)[:, :3]
+        xd = X.reshape(n_agents, n_states)[:, :3]
+        print(f'xd is {xd}')
         if not sim:
             swarm.allcfs.goToAbsolute(xd, duration = 1.5)
-        
+
             pos_cfs = [cf.position() for cf in swarm.allcfs.crazyflies] #position update from VICON
             vel_cfs = [cf.velocity() for cf in swarm.allcfs.crazyflies] #velocity update from VICON
-            
+            # print(f'vel_cfs is {vel_cfs}')
+            # print(f'pos_cfs is {pos_cfs}')
+            # print(f'vel_cfs is {vel_cfs}')
             # x_prev = xi.copy()
-            # dV = (pos_cf - x_prev[0:3]) / dt
-            # x = np.hstack([pos_cf, dV])
-            xi = np.hstack([pos_cfs, vel_cfs]).flatten().reshape(-1,1)    
+            # x_prev = pos_cfs[dec.pos_mask(x_dims,3)]
+            # dV = (pos_cfs - x_prev[0:3]) / dt
+            # xi = np.hstack([pos_cfs, dV])
+            xi = np.hstack([pos_cfs, vel_cfs]).flatten().reshape(-1,1)   
         
         else:
-            xi = X[step_size].reshape(-1,1)
+            xi = X.reshape(-1,1)
         # print(X.shape,xi.shape)
         # state_error = np.abs(X.reshape(-1,1) - xi)
         # print(f"CF states: \n{xi.reshape(n_agents, n_states)}\n")
         # print(f"Predicted state error: {state_error}")
 
-        # plt.figure(fig1.number)
-        # plt.clf()
-        # plot_solve(X_full, J, x_goal, x_dims, n_d=3)
-        # plt.title("Path Taken")
-        # plt.gca().set_zlim(0, 2)
+        plt.figure(fig1.number)
+        plt.clf()
+        plot_solve(X_full, J, x_goal, x_dims, n_d=3)
+        plt.title("Path Taken")
+        plt.gca().set_zlim(0, 2)
 
-        # plt.figure(fig2.number)
-        # plt.clf()
-        # plot_solve(X, J, x_goal, x_dims, n_d=3)
-        # plt.title("Path Planned")
-        # plt.gca().set_zlim(0, 2)
+        plt.figure(fig2.number)
+        plt.clf()
+        plot_solve(X, J, x_goal, x_dims, n_d=3)
+        plt.title("Path Planned")
+        plt.gca().set_zlim(0, 2)
 
-        # fig1.canvas.draw()
-        # fig2.canvas.draw()
-        # plt.pause(1)
+        fig1.canvas.draw()
+        fig2.canvas.draw()
+        plt.pause(0.5)
 
         # # Replace the currently predicted states with the actual ones.
         # X[0, pos_mask(x_dims, 3)] = xi[pos_mask(x_dims, 3)]
         # # TODO: see if this velocity makes sense here.
         # X[0, ~pos_mask(x_dims, 3)] = xi[~pos_mask(x_dims, 3)]
-        X = np.tile(xi, (N+1,1))
+        # X = np.tile(xi, (N+1,1))
 
         if LOG_DATA:
             timestampString = str(time.time())
             csvwriter.writerow([timestampString] + pos_cfs + vel_cfs)
 
         rate.sleep()
-    
+
+       
     if not sim:
         input("##### Press Enter to Go Back to Origin #####")
         swarm.allcfs.goToAbsolute(start_pos_list,duration = GOTO_DURATION*3)
@@ -298,13 +322,13 @@ if __name__ == '__main__':
 
     swarm = crazy.Crazyswarm()
     listener = tf.TransformListener()
-    rate = rospy.Rate(2)
+    rate = rospy.Rate(4)
 
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
 
     # TODO: succeed without collision avoidance.
-    # swarm.allcfs.setParam("colAv/enable", 1) 
+    swarm.allcfs.setParam("colAv/enable", 0) 
 
     # Exit on CTRL+C. 
     signal.signal(signal.SIGINT, lambda *_: sys.exit(-1))
