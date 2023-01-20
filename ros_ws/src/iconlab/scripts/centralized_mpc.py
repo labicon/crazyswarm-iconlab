@@ -24,6 +24,7 @@ def solve_centralized(x0,xf,u_ref,N,Q,R,Qf,n_agents,n_states,n_inputs,radius,
              max_input,min_input,max_state,min_state):
     #N is the shifting prediction horizon
     
+    
     p_opts = {"expand":True}
     s_opts = {"max_iter": 1000,"print_level":0}
     
@@ -36,6 +37,9 @@ def solve_centralized(x0,xf,u_ref,N,Q,R,Qf,n_agents,n_states,n_inputs,radius,
     f = generate_f(x_dims)
     X_full = np.zeros((0, n_x))
     U_full = np.zeros((0, n_u))
+
+    pairwise_dist = compute_pairwise_distance(x0,x_dims)
+    print(f'The current pairwise distances is {pairwise_dist} \n')
     
     t = 0
 
@@ -68,10 +72,11 @@ def solve_centralized(x0,xf,u_ref,N,Q,R,Qf,n_agents,n_states,n_inputs,radius,
         opti.subject_to(X[:,k+1]==x_next) # close the gaps
         
         #Constraints on inputs:
-        for j in range(max_input.shape[0]):
-            # print(U[j,k].shape,max_input[j].shape)
-            opti.subject_to(U[j,k] <= max_input[j] )
-            opti.subject_to(min_input[j] <= U[j,k] )
+        # for j in range(max_input.T.flatten().shape[0]):
+            # opti.subject_to(U[j,k] <= max_input.T.flatten()[j] )
+            # opti.subject_to(min_input.T.flatten()[j] <= U[j,k] )
+        opti.subject_to(U[:,k] <= max_input.T.flatten()[:] )
+        opti.subject_to(min_input.T.flatten()[:] <= U[:,k] )
 
     #collision avoidance constraints
     for k in range(N+1):
@@ -80,11 +85,12 @@ def solve_centralized(x0,xf,u_ref,N,Q,R,Qf,n_agents,n_states,n_inputs,radius,
             opti.subject_to(distances[n] >= radius)
             
         #constraints on states:
-        for m in range(max_state.shape[0]):
-
-            opti.subject_to(X[m,k]<= max_state[m] )
-            opti.subject_to(min_state[m] <= X[m,k])
-
+        # for m in range(max_state.T.flatten().shape[0]):
+        #     opti.subject_to(X[m,k]<= max_state.T.flatten()[m] )
+        #     opti.subject_to(max_state.T.flatten()[m] <= X[m,k])
+        opti.subject_to(X[:,k]<= max_state.T.flatten()[:])
+        opti.subject_to(max_state.T.flatten()[:] <= X[:,k])
+            
             
     #equality constraints for initial condition:
     opti.subject_to(X[:,0] == x0)
@@ -99,14 +105,14 @@ def solve_centralized(x0,xf,u_ref,N,Q,R,Qf,n_agents,n_states,n_inputs,radius,
     except RuntimeError:
         print('Current problem is infeasible \n')
         failed_count +=1
-        
+        opti.debug.show_infeasibilities()
         return X_full,U_full, t, J_list, failed_count, converged
         
     x0 = sol.value(X)[:,1].reshape(-1,1)
     u_sol = sol.value(U)[:,0]
     objective_val = sol.value(cost_fun)
     J_list.append(objective_val)
-
+        
     print(f'current objective function value is {sol.value(cost_fun)}')
         
     #Store the trajectory

@@ -22,23 +22,23 @@ import numpy as np
 import rospy
 import tf
 from dpilqr import plot_solve, split_agents
-from distributed_mpc import *
-from centralized_mpc import *
+from distributed_mpc import solve_distributed
+from centralized_mpc import solve_centralized
 import pycrazyswarm as crazy
 
 
 
 #################################################
-theta_max = np.pi / 5
-phi_max = np.pi / 5
+theta_max = np.pi / 3
+phi_max = np.pi / 3
 
-v_max = 2
-v_min = -2
+v_max = 5
+v_min = -5
 
-theta_min = -np.pi / 5
-phi_min = -np.pi / 5
+theta_min = -np.pi /3
+phi_min = -np.pi / 3
 
-tau_max = 15
+tau_max = 20
 tau_min = 0
 
 x_min = -5
@@ -50,8 +50,8 @@ y_max = 5
 z_min = 0
 z_max = 4.0
 
-a_max = 1.5
-a_min = -1.5
+a_max = 5.0
+a_min = -5.0
 
 # u_ref_base = np.array([0,0,g])
 u_ref_base = np.array([0,0,0,0,0,0])
@@ -135,11 +135,6 @@ goal_pos_list = [goal_pos_drone1, goal_pos_drone2 , goal_pos_drone3]
 #                     goal_pos_drone4, goal_pos_drone5]
 
 
-
-
-
-
-
 def go_home_callback(swarm, timeHelper, start_pos_list):
     """Tell all quadcopters to go to their starting positions when program exits"""
     print("Program exit: telling quads to go home...")
@@ -202,14 +197,19 @@ def perform_experiment(centralized=False, sim=False):
     
     X_full = np.zeros((0, n_states*n_agents))
     U_full = np.zeros((0, n_controls*n_agents))
-    X = np.tile(xi,(N+1, 1))
+    # X = np.tile(xi,(N+1, 1))
    
     n_humans = 0
     d_converge = 0.1
 
     loop = 0
 
+    print(f'max_state is {max_state}')
+
+
+
     while not np.all(dec.distance_to_goal(xi,x_goal,n_agents,n_states,3) <= d_converge):
+        print(f'shape of xi is {xi.shape}')
         t0 = pc()
         # How to feed state back into decentralization?
         #  1. Only decentralize at the current state.
